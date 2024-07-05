@@ -1,9 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QComboBox, QSpinBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QComboBox, QSpinBox
 
 class SmoothingOptions(QWidget):
     def __init__(self):
         super().__init__()
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         self.setLayout(layout)
 
         self.smoothing_method = QComboBox()
@@ -14,9 +14,7 @@ class SmoothingOptions(QWidget):
         self.smoothing_window.setValue(11)
         self.smoothing_window.setSingleStep(2)
 
-        layout.addWidget(QLabel("Smoothing:"))
         layout.addWidget(self.smoothing_method)
-        layout.addWidget(QLabel("Window:"))
         layout.addWidget(self.smoothing_window)
 
         self.smoothing_method.currentIndexChanged.connect(self.update_window_settings)

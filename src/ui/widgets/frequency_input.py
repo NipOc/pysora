@@ -1,9 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSpinBox, QDoubleSpinBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QDoubleSpinBox
 
 class FrequencyInput(QWidget):
     def __init__(self):
         super().__init__()
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         self.setLayout(layout)
 
         self.start_freq = QSpinBox()
@@ -19,9 +19,6 @@ class FrequencyInput(QWidget):
         self.duration.setValue(5)
         self.duration.setSingleStep(0.1)
 
-        layout.addWidget(QLabel("Start Freq (Hz):"))
         layout.addWidget(self.start_freq)
-        layout.addWidget(QLabel("End Freq (Hz):"))
         layout.addWidget(self.end_freq)
-        layout.addWidget(QLabel("Duration (s):"))
         layout.addWidget(self.duration)

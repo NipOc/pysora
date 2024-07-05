@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QMessageBox, QLabel, QProgressDialog, QApplication
+from PyQt6.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout,
+                             QWidget, QPushButton, QMessageBox, QLabel, QProgressDialog,
+                             QApplication, QGroupBox)
 from PyQt6.QtCore import Qt
 import numpy as np
 
@@ -20,36 +22,62 @@ class MainWindow(QMainWindow):
         self.progress_dialog = None
 
         self.setWindowTitle("Audio Frequency Response Analyzer")
-        self.setGeometry(100, 100, 1000, 800)
+        self.setGeometry(100, 100, 1200, 800)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.layout = QVBoxLayout(self.central_widget)
+        self.main_layout = QVBoxLayout(self.central_widget)
 
         self.setup_ui()
 
     def setup_ui(self):
-        control_layout = QHBoxLayout()
+        # Control panel
+        control_panel = QGroupBox("Control Panel")
+        control_layout = QGridLayout()
+        control_panel.setLayout(control_layout)
 
+        # Device selection
+        device_group = QGroupBox("Device Selection")
+        device_layout = QVBoxLayout()
         self.device_selector = DeviceSelector()
+        device_layout.addWidget(self.device_selector)
+        device_group.setLayout(device_layout)
+        control_layout.addWidget(device_group, 0, 0, 1, 2)
+
+        # Frequency input
+        freq_group = QGroupBox("Frequency Settings")
+        freq_layout = QFormLayout()
         self.frequency_input = FrequencyInput()
+        freq_layout.addRow("Start Frequency (Hz):", self.frequency_input.start_freq)
+        freq_layout.addRow("End Frequency (Hz):", self.frequency_input.end_freq)
+        freq_layout.addRow("Duration (s):", self.frequency_input.duration)
+        freq_group.setLayout(freq_layout)
+        control_layout.addWidget(freq_group, 0, 2, 1, 1)
+
+        # Smoothing options
+        smoothing_group = QGroupBox("Smoothing Options")
+        smoothing_layout = QFormLayout()
         self.smoothing_options = SmoothingOptions()
+        smoothing_layout.addRow("Method:", self.smoothing_options.smoothing_method)
+        smoothing_layout.addRow("Window:", self.smoothing_options.smoothing_window)
+        smoothing_group.setLayout(smoothing_layout)
+        control_layout.addWidget(smoothing_group, 0, 3, 1, 1)
 
-        control_layout.addWidget(self.device_selector)
-        control_layout.addWidget(self.frequency_input)
-        control_layout.addWidget(self.smoothing_options)
-
+        # Run button
         self.run_button = QPushButton("Run Test")
         self.run_button.clicked.connect(self.run_test)
-        control_layout.addWidget(self.run_button)
+        control_layout.addWidget(self.run_button, 1, 0, 1, 4)
 
-        self.layout.addLayout(control_layout)
+        self.main_layout.addWidget(control_panel)
 
+        # Graph
         self.graph = FrequencyResponseGraph()
-        self.layout.addWidget(self.graph)
+        self.main_layout.addWidget(self.graph)
 
+        # Status bar
+        self.status_bar = self.statusBar()
         self.delay_label = QLabel("Audio Delay: N/A")
-        self.layout.addWidget(self.delay_label)
+        self.status_bar.addPermanentWidget(self.delay_label)
 
         # Connect smoothing options to plot update
         self.smoothing_options.smoothing_method.currentIndexChanged.connect(self.update_plot)
