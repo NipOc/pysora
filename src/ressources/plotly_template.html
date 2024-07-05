@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div id="plot"></div>
+    <script>
+        var bridge = null;
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            bridge = channel.objects.bridge;
+            bridge.ready();
+        });
+
+        function updatePlot(plotData) {
+            var data = JSON.parse(plotData);
+            Plotly.react('plot', data.data, data.layout);
+        }
+    </script>
+</body>
+</html>
