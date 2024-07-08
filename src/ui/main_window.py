@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QApplication, QGroupBox, QFileDialog, QInputDialog)
 from PyQt6.QtCore import Qt
 import numpy as np
+from scipy import interpolate
 
 from .widgets.device_selector import DeviceSelector
 from .widgets.frequency_input import FrequencyInput
@@ -107,7 +108,16 @@ class MainWindow(QMainWindow):
         if file_path:
             try:
                 self.target_freqs, self.target_mags, metadata = self.curve_ops.load_target_curve(file_path)
-                self.graph.add_target_curve(self.target_freqs, self.target_mags)
+                
+                # Interpolate the target curve if it has fewer points than the current measurement
+                if self.freqs is not None and len(self.target_freqs) < len(self.freqs):
+                    interp_func = interpolate.interp1d(self.target_freqs, self.target_mags, kind='linear', fill_value='extrapolate')
+                    self.target_mags = interp_func(self.freqs)
+                    self.target_freqs = self.freqs
+                
+                # Convert target_mags to dB for display
+                target_mags_db = 20 * np.log10(np.abs(self.target_mags))
+                self.graph.add_target_curve(self.target_freqs, target_mags_db)
                 QMessageBox.information(self, "Success", "Target curve loaded successfully.")
                 
                 # If there's a current measurement, compare it to the target
