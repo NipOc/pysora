@@ -48,6 +48,41 @@ class PlotlyBridge(QObject):
             autosize=True  # Enable auto-sizing
         )
         return fig
+    
+    @pyqtSlot(str, str, result=str)
+    def add_target_curve(self, freqs, magnitudes):
+        freqs = json.loads(freqs)
+        magnitudes = json.loads(magnitudes)
+        with self.fig.batch_update():
+            self.fig.add_trace(go.Scatter(
+                x=freqs,
+                y=magnitudes,
+                mode='lines',
+                name='Target Curve',
+                line=dict(color='red', dash='dash')
+            ))
+        return json.dumps(self.fig.to_dict())
+
+    @pyqtSlot(str, str, result=str)
+    def add_difference_curve(self, freqs, difference):
+        freqs = json.loads(freqs)
+        difference = json.loads(difference)
+        with self.fig.batch_update():
+            self.fig.add_trace(go.Scatter(
+                x=freqs,
+                y=difference,
+                mode='lines',
+                name='Difference',
+                line=dict(color='purple')
+            ))
+            self.fig.update_layout(
+                yaxis2=dict(
+                    title="Difference (dB)",
+                    overlaying="y",
+                    side="right"
+                )
+            )
+        return json.dumps(self.fig.to_dict())
 
     @pyqtSlot(result=str)
     def get_initial_figure(self):
@@ -133,6 +168,18 @@ class FrequencyResponseGraph(QWidget):
                     });
                 }
 
+                function addTargetCurve(freqs, magnitudes) {
+                    bridge.add_target_curve(JSON.stringify(freqs), JSON.stringify(magnitudes), function(fig) {
+                        Plotly.react('plot', JSON.parse(fig), {responsive: true});
+                    });
+                }
+
+                function addDifferenceCurve(freqs, difference) {
+                    bridge.add_difference_curve(JSON.stringify(freqs), JSON.stringify(difference), function(fig) {
+                        Plotly.react('plot', JSON.parse(fig), {responsive: true});
+                    });
+                }
+
                 function resizePlot() {
                     var width = window.innerWidth;
                     var height = window.innerHeight;
@@ -160,6 +207,18 @@ class FrequencyResponseGraph(QWidget):
         freqs_list = freqs.tolist() if isinstance(freqs, np.ndarray) else list(freqs)
         magnitudes_list = magnitudes.tolist() if isinstance(magnitudes, np.ndarray) else list(magnitudes)
         js_code = f"addSmoothedData({json.dumps(freqs_list)}, {json.dumps(magnitudes_list)})"
+        self.web_view.page().runJavaScript(js_code)
+
+    def add_target_curve(self, freqs, magnitudes):
+        freqs_list = freqs.tolist() if isinstance(freqs, np.ndarray) else list(freqs)
+        magnitudes_list = magnitudes.tolist() if isinstance(magnitudes, np.ndarray) else list(magnitudes)
+        js_code = f"addTargetCurve({json.dumps(freqs_list)}, {json.dumps(magnitudes_list)})"
+        self.web_view.page().runJavaScript(js_code)
+
+    def add_difference_curve(self, freqs, difference):
+        freqs_list = freqs.tolist() if isinstance(freqs, np.ndarray) else list(freqs)
+        difference_list = difference.tolist() if isinstance(difference, np.ndarray) else list(difference)
+        js_code = f"addDifferenceCurve({json.dumps(freqs_list)}, {json.dumps(difference_list)})"
         self.web_view.page().runJavaScript(js_code)
 
     def clear_plot(self):
