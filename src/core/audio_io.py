@@ -14,7 +14,7 @@ class AudioIO:
         recorded = np.zeros_like(signal)
         total_frames = len(signal)
         
-        def callback(indata, outdata, frames, time, status):
+        def callback(indata, outdata, frames, status):
             if status:
                 print(status)
             current_frame = callback.frame

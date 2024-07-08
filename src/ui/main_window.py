@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
             self.frequency_input.start_freq.value(),
             self.frequency_input.end_freq.value(),
             self.frequency_input.duration.value(),
-            44100,  # Sample rate
+            48000,  # Sample rate
             256     # Buffer size
         )
         

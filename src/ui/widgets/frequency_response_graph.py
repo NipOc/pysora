@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtCore import QObject, pyqtSlot, QUrl
+from PyQt6.QtCore import QObject, pyqtSlot, QUrl, QTimer
 import json
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -43,7 +43,9 @@ class PlotlyBridge(QObject):
                 y=1.02,
                 xanchor="right",
                 x=1
-            )
+            ),
+            margin=dict(l=50, r=50, t=50, b=50),  # Add some margin
+            autosize=True  # Enable auto-sizing
         )
         return fig
 
@@ -70,10 +72,20 @@ class PlotlyBridge(QObject):
             self.fig.data[1].visible = True
         return json.dumps(self.fig.to_dict())
 
+    @pyqtSlot(int, int, result=str)
+    def resize_plot(self, width, height):
+        with self.fig.batch_update():
+            self.fig.update_layout(
+                width=width,
+                height=height
+            )
+        return json.dumps(self.fig.to_dict())
+
 class FrequencyResponseGraph(QWidget):
     def __init__(self):
         super().__init__()
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)  # Remove layout margins
         self.web_view = QWebEngineView()
         self.layout.addWidget(self.web_view)
 
@@ -88,6 +100,14 @@ class FrequencyResponseGraph(QWidget):
         <head>
             <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
             <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+            <style>
+                body, html, #plot {
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                }
+            </style>
         </head>
         <body>
             <div id="plot"></div>
@@ -97,21 +117,33 @@ class FrequencyResponseGraph(QWidget):
                     bridge = channel.objects.bridge;
                     // Initialize the plot
                     bridge.get_initial_figure(function(fig) {
-                        Plotly.newPlot('plot', JSON.parse(fig));
+                        Plotly.newPlot('plot', JSON.parse(fig), {responsive: true});
                     });
                 });
 
                 function updatePlot(freqs, magnitudes) {
                     bridge.update_plot(JSON.stringify(freqs), JSON.stringify(magnitudes), function(fig) {
-                        Plotly.react('plot', JSON.parse(fig));
+                        Plotly.react('plot', JSON.parse(fig), {responsive: true});
                     });
                 }
 
                 function addSmoothedData(freqs, magnitudes) {
                     bridge.add_smoothed_data(JSON.stringify(freqs), JSON.stringify(magnitudes), function(fig) {
-                        Plotly.react('plot', JSON.parse(fig));
+                        Plotly.react('plot', JSON.parse(fig), {responsive: true});
                     });
                 }
+
+                function resizePlot() {
+                    var width = window.innerWidth;
+                    var height = window.innerHeight;
+                    bridge.resize_plot(width, height, function(fig) {
+                        Plotly.react('plot', JSON.parse(fig), {responsive: true});
+                    });
+                }
+
+                window.addEventListener('resize', resizePlot);
+                // Initial resize
+                resizePlot();
             </script>
         </body>
         </html>
@@ -132,3 +164,13 @@ class FrequencyResponseGraph(QWidget):
 
     def clear_plot(self):
         self.web_view.page().runJavaScript("Plotly.purge('plot')")
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Use a short timer to allow the layout to settle before resizing the plot
+        self.resize_plot
+        QTimer.singleShot(100, self.resize_plot)
+
+    def resize_plot(self):
+        size = self.web_view.size()
+        self.web_view.page().runJavaScript(f"resizePlot({size.width()}, {size.height()})")

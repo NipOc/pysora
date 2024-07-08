@@ -1,2 +1,8 @@
 /.venv
 /.vscode
+/app
+/build
+/dist
+*.spec
+*.pyc
+*.exe
